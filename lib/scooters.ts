@@ -42,12 +42,10 @@ export const scooters: Scooter[] = [
       superhost: true,
       since: 2021,
     },
-    image:
-      "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=80",
+    image: "/scooters/honda-activa-6g/hero.jpg",
     gallery: [
-      "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1609630875171-b1321377ee65?auto=format&fit=crop&w=1200&q=80",
+      "/scooters/honda-activa-6g/hero.jpg",
+      "/scooters/honda-activa-6g/card.jpg",
     ],
     amenities: ["Helmet", "Phone Mount", "Fuel Start"],
     description:
@@ -69,11 +67,10 @@ export const scooters: Scooter[] = [
     city: "Bangalore",
     hub: "Indiranagar Hub",
     vendor: { name: "Volt Rentals", rating: 4.7, superhost: true, since: 2022 },
-    image:
-      "https://images.unsplash.com/photo-1611241443322-b5bce1a37ea0?auto=format&fit=crop&w=1200&q=80",
+    image: "/scooters/tvs-jupiter-125/hero.jpg",
     gallery: [
-      "https://images.unsplash.com/photo-1611241443322-b5bce1a37ea0?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1200&q=80",
+      "/scooters/tvs-jupiter-125/hero.jpg",
+      "/scooters/tvs-jupiter-125/card.jpg",
     ],
     amenities: ["Helmet", "Large Boot", "External Fuel Fill"],
     description:
@@ -120,10 +117,10 @@ export const scooters: Scooter[] = [
     city: "Bangalore",
     hub: "Whitefield Hub",
     vendor: { name: "Karan's Rentals", rating: 4.9, superhost: true, since: 2021 },
-    image:
-      "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?auto=format&fit=crop&w=1200&q=80",
+    image: "/scooters/suzuki-access-125/hero.jpg",
     gallery: [
-      "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?auto=format&fit=crop&w=1200&q=80",
+      "/scooters/suzuki-access-125/hero.jpg",
+      "/scooters/suzuki-access-125/card.jpg",
     ],
     amenities: ["Helmet", "USB Charging"],
     description:
@@ -144,10 +141,10 @@ export const scooters: Scooter[] = [
     city: "Bangalore",
     hub: "HSR Layout Hub",
     vendor: { name: "ChargeUp", rating: 4.9, superhost: true, since: 2020 },
-    image:
-      "https://images.unsplash.com/photo-1591638848542-54db6ff1d5a0?auto=format&fit=crop&w=1200&q=80",
+    image: "/scooters/ola-s1-pro/hero.jpg",
     gallery: [
-      "https://images.unsplash.com/photo-1591638848542-54db6ff1d5a0?auto=format&fit=crop&w=1200&q=80",
+      "/scooters/ola-s1-pro/hero.jpg",
+      "/scooters/ola-s1-pro/card.jpg",
     ],
     amenities: ["Free Charging", "Smart Dashboard", "Helmet", "Boot Space"],
     description:
