@@ -1,0 +1,65 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        primary: "#705d00",
+        "primary-container": "#ffd700",
+        "primary-fixed": "#ffe16d",
+        "primary-fixed-dim": "#e9c400",
+        "on-primary": "#ffffff",
+        "on-primary-container": "#705e00",
+        "on-primary-fixed": "#221b00",
+        "on-primary-fixed-variant": "#544600",
+        secondary: "#5e5e5e",
+        "on-secondary": "#ffffff",
+        "secondary-container": "#e2e2e2",
+        "on-secondary-container": "#646464",
+        tertiary: "#00696f",
+        "tertiary-container": "#00f1ff",
+        "tertiary-fixed": "#79f5ff",
+        "on-tertiary": "#ffffff",
+        "on-tertiary-container": "#006a70",
+        surface: "#f9f9f9",
+        "surface-dim": "#dadada",
+        "surface-bright": "#f9f9f9",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-low": "#f3f3f3",
+        "surface-container": "#eeeeee",
+        "surface-container-high": "#e8e8e8",
+        "surface-container-highest": "#e2e2e2",
+        "on-surface": "#1a1c1c",
+        "on-surface-variant": "#4d4732",
+        "inverse-surface": "#2f3131",
+        "inverse-on-surface": "#f1f1f1",
+        "inverse-primary": "#e9c400",
+        background: "#f9f9f9",
+        "on-background": "#1a1c1c",
+        outline: "#7e775f",
+        "outline-variant": "#d0c6ab",
+        error: "#ba1a1a",
+        "error-container": "#ffdad6",
+        "on-error": "#ffffff",
+        "on-error-container": "#93000a",
+      },
+      fontFamily: {
+        headline: ['"Plus Jakarta Sans"', "sans-serif"],
+        body: ["Inter", "sans-serif"],
+      },
+      borderRadius: {
+        DEFAULT: "1rem",
+        lg: "2rem",
+        xl: "3rem",
+        full: "9999px",
+      },
+      boxShadow: {
+        ambient: "0 24px 48px -12px rgba(26,28,28,0.08)",
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
