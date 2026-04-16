@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScooterCard } from "@/components/ScooterCard";
 import { Icon } from "@/components/Icon";
+import { MobileFilterSheet } from "@/components/MobileFilterSheet";
 import { scooters, brands, cities } from "@/lib/scooters";
 
 type SearchParams = Promise<{
@@ -32,7 +33,7 @@ export default async function BrowsePage({
     <>
       <Header />
       <main className="max-w-screen-xl mx-auto px-6 py-10">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4 md:mb-8">
           <div>
             <div className="text-xs font-bold uppercase tracking-widest text-primary">
               {sp.city || "Bangalore"} · {list.length} results
@@ -41,16 +42,31 @@ export default async function BrowsePage({
               Available scootys
             </h1>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Desktop sort pills */}
+          <div className="hidden md:flex items-center gap-2 flex-wrap">
             <SortPill sort={sort} value="popularity" label="Popularity" />
             <SortPill sort={sort} value="price" label="Price" />
             <SortPill sort={sort} value="rating" label="Rating" />
           </div>
         </div>
 
+        {/* Mobile filter + sort bar */}
+        <div className="md:hidden flex items-center gap-2 mb-5 overflow-x-auto pb-1">
+          <MobileFilterSheet
+            city={sp.city || "Bangalore"}
+            category={selectedCategory}
+            brand={selectedBrand}
+            sort={sort}
+            count={list.length}
+          />
+          <SortPill sort={sort} value="popularity" label="Popularity" />
+          <SortPill sort={sort} value="price" label="Price" />
+          <SortPill sort={sort} value="rating" label="Rating" />
+        </div>
+
         <div className="grid md:grid-cols-[260px_1fr] gap-8">
-          {/* Filters */}
-          <aside className="space-y-8">
+          {/* Filters — desktop sidebar only */}
+          <aside className="hidden md:block space-y-8">
             <FilterGroup title="City">
               <div className="flex flex-wrap gap-2">
                 {cities.slice(0, 6).map((c) => (

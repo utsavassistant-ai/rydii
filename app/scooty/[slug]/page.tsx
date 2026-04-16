@@ -106,11 +106,6 @@ export default async function ScootyDetail({
             </div>
 
             <section>
-              <h2 className="text-2xl font-extrabold mb-3">About this scooty</h2>
-              <p className="text-secondary leading-relaxed">{s.description}</p>
-            </section>
-
-            <section>
               <h2 className="text-2xl font-extrabold mb-4">What&apos;s included</h2>
               <div className="grid grid-cols-2 gap-3">
                 {s.amenities.map((a) => (
@@ -123,6 +118,53 @@ export default async function ScootyDetail({
                   </div>
                 ))}
               </div>
+            </section>
+
+            {/* Mobile-only inline booking card — appears right after What's included */}
+            <div className="md:hidden">
+              <div className="rounded-lg bg-surface-container-lowest shadow-ambient p-6 space-y-4">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <span className="text-4xl font-extrabold">₹{s.pricePerDay}</span>
+                    <span className="text-secondary">/day</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm font-bold">
+                    <Icon name="star" className="!text-[16px] text-primary-container" fill />
+                    {s.rating}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 bg-surface-container-low rounded-lg p-2">
+                  <div className="p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-secondary">Pickup</div>
+                    <div className="font-bold">Oct 25, 10:00</div>
+                  </div>
+                  <div className="p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-secondary">Return</div>
+                    <div className="font-bold">Oct 26, 10:00</div>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <Row label={`₹${s.pricePerDay} × 1 day`} value={`₹${s.pricePerDay}`} />
+                  <Row label="Platform fee" value={`₹${platform}`} />
+                  <Row label="Smart protection" value={`₹${insurance}`} />
+                  <div className="border-t border-outline-variant/30 pt-3 flex justify-between font-bold text-lg">
+                    <span>Total</span>
+                    <span>₹{total}</span>
+                  </div>
+                </div>
+                <Link
+                  href={`/checkout/${s.slug}`}
+                  className="block text-center w-full cta-gradient text-on-primary-fixed rounded-full py-4 font-bold text-lg"
+                >
+                  Reserve now
+                </Link>
+                <p className="text-xs text-secondary text-center">Free cancellation up to 24h before pickup</p>
+              </div>
+            </div>
+
+            <section>
+              <h2 className="text-2xl font-extrabold mb-3">About this scooty</h2>
+              <p className="text-secondary leading-relaxed">{s.description}</p>
             </section>
 
             {/* Vendor */}
@@ -201,8 +243,8 @@ export default async function ScootyDetail({
             </section>
           </div>
 
-          {/* Booking sidebar */}
-          <aside className="md:sticky md:top-24 h-fit">
+          {/* Booking sidebar — desktop only */}
+          <aside className="hidden md:block md:sticky md:top-24 h-fit">
             <div className="rounded-lg bg-surface-container-lowest shadow-ambient p-6 space-y-4">
               <div className="flex items-baseline justify-between">
                 <div>
