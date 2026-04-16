@@ -4,7 +4,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScooterCard } from "@/components/ScooterCard";
 import { Icon } from "@/components/Icon";
-import { scooters, cities } from "@/lib/scooters";
+import { CitySelect } from "@/components/CitySelect";
+import { scooters } from "@/lib/scooters";
 
 export default function HomePage() {
   const featured = scooters.slice(0, 4);
@@ -36,20 +37,7 @@ export default function HomePage() {
               className="w-full bg-surface-container-lowest p-4 md:p-5 rounded-xl md:rounded-full shadow-ambient flex flex-col md:flex-row items-stretch md:items-center gap-3"
             >
               <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-3">
-                <div className="flex flex-col px-4 py-2 md:py-0 md:border-r md:border-outline-variant/30">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">
-                    Location
-                  </label>
-                  <select
-                    name="city"
-                    defaultValue="Bangalore"
-                    className="bg-transparent border-none p-0 focus:ring-0 text-on-surface font-semibold"
-                  >
-                    {cities.map((c) => (
-                      <option key={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
+                <CitySelect />
                 <div className="flex flex-col px-4 py-2 md:py-0 md:border-r md:border-outline-variant/30">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">
                     Pickup
