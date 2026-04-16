@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
+import { LocationPicker } from "@/components/LocationPicker";
 import { getScooterBySlug } from "@/lib/scooters";
 
 export default async function CheckoutPage({
@@ -59,27 +60,15 @@ export default async function CheckoutPage({
             </section>
 
             {/* Logistics */}
-            <section className="bg-surface-container-low rounded-lg p-6 space-y-4">
+            <section className="bg-surface-container-low rounded-lg p-6 space-y-6">
               <h2 className="text-xl font-extrabold">Pickup & drop</h2>
+
+              {/* Date row */}
               <div className="grid md:grid-cols-2 gap-4">
-                <Field label="Pickup hub">
-                  <select className="w-full bg-transparent font-bold focus:ring-0 border-none p-0">
-                    <option>
-                      {s.hub}, {s.city}
-                    </option>
-                    <option>HSR Layout Hub</option>
-                    <option>Koramangala Hub</option>
-                  </select>
-                </Field>
-                <Field label="Drop-off hub">
-                  <select className="w-full bg-transparent font-bold focus:ring-0 border-none p-0">
-                    <option>Same as pickup</option>
-                    <option>Indiranagar Hub</option>
-                  </select>
-                </Field>
                 <Field label="Pickup date & time">
                   <input
                     type="datetime-local"
+                    name="pickup_datetime"
                     defaultValue="2025-10-25T10:00"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0"
                   />
@@ -87,10 +76,17 @@ export default async function CheckoutPage({
                 <Field label="Return date & time">
                   <input
                     type="datetime-local"
+                    name="drop_datetime"
                     defaultValue="2025-10-26T10:00"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0"
                   />
                 </Field>
+              </div>
+
+              {/* Location pickers */}
+              <div className="grid md:grid-cols-2 gap-6 pt-2">
+                <LocationPicker type="pickup" hubName={s.hub} city={s.city} />
+                <LocationPicker type="drop" hubName={s.hub} city={s.city} />
               </div>
             </section>
 
@@ -161,9 +157,16 @@ export default async function CheckoutPage({
                 <Row label="Platform fee" value={`₹${platform}`} />
                 <Row label="Smart protection" value={`₹${insurance}`} />
                 <Row label="GST (18%)" value={`₹${gst}`} />
+                <div className="flex justify-between text-secondary text-xs bg-surface-container-low rounded-lg px-3 py-2">
+                  <span className="flex items-center gap-1">
+                    <Icon name="local_shipping" className="!text-[13px]" />
+                    Delivery (if selected)
+                  </span>
+                  <span className="text-on-surface font-semibold">+₹79 each</span>
+                </div>
                 <div className="border-t border-outline-variant/30 pt-3 flex justify-between font-bold text-lg">
                   <span>Total payable</span>
-                  <span>₹{total}</span>
+                  <span>₹{total}+</span>
                 </div>
               </div>
 
