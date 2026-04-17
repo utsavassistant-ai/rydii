@@ -1,28 +1,130 @@
 import Link from "next/link";
 import Image from "next/image";
+import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
+import { requireAuth } from "@/lib/auth";
 import { VendorLayout } from "@/components/VendorLayout";
 import { Icon } from "@/components/Icon";
-import { scooters } from "@/lib/scooters";
+import type { DbScooter, Booking } from "@/lib/types";
 
-const stats = [
-  { label: "Total bookings", value: "2,450", delta: "+12%", icon: "event_note" },
-  { label: "Earnings (YTD)", value: "₹4.2L", delta: "+18%", icon: "payments" },
-  { label: "Active scootys", value: "18", delta: "+2", icon: "two_wheeler" },
-  { label: "Avg rating", value: "4.8 ★", delta: "+0.1", icon: "star" },
-];
+export default async function VendorDashboard() {
+  const user = await requireAuth();
+  const supabase = createClient(await cookies());
 
-const recent = [
-  { id: "RYD284512", scooter: "Honda Activa 6G", customer: "Aditya Verma", date: "Oct 25", status: "Upcoming" },
-  { id: "RYD284491", scooter: "Ather 450X", customer: "Priya Singh", date: "Oct 24", status: "Ongoing" },
-  { id: "RYD284400", scooter: "TVS Jupiter 125", customer: "Rahul Mehta", date: "Oct 22", status: "Completed" },
-  { id: "RYD284311", scooter: "Suzuki Access 125", customer: "Neha Rao", date: "Oct 20", status: "Completed" },
-];
+  // Verify vendor role and get profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
-export default function VendorDashboard() {
+  if (!profile || profile.role !== "vendor") {
+    const { redirect } = await import("next/navigation");
+    redirect("/");
+  }
+
+  // Fetch vendor's scooters
+  const { data: scooters } = await supabase
+    .from("scooters")
+    .select("*")
+    .eq("vendor_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const fleet: DbScooter[] = scooters || [];
+  const scooterIds = fleet.map((s) => s.id);
+
+  // Fetch bookings for vendor's scooters
+  let allBookings: (Booking & { scooter?: DbScooter })[] = [];
+  if (scooterIds.length > 0) {
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("*, scooter:scooters(*)")
+      .in("scooter_id", scooterIds)
+      .order("created_at", { ascending: false });
+
+    allBookings = (bookingsData as (Booking & { scooter?: DbScooter })[]) || [];
+  }
+
+  // Calculate stats
+  const totalBookings = allBookings.length;
+  const completedBookings = allBookings.filter(
+    (b) => b.status === "completed"
+  );
+  const totalEarnings = completedBookings.reduce(
+    (sum, b) => sum + (b.total || 0),
+    0
+  );
+  const activeScooters = fleet.length;
+
+  // Average rating across fleet
+  const ratedScooters = fleet.filter((s) => s.reviews_count > 0);
+  const avgRating =
+    ratedScooters.length > 0
+      ? ratedScooters.reduce((sum, s) => sum + s.rating, 0) /
+        ratedScooters.length
+      : 0;
+
+  // Format earnings
+  const formattedEarnings =
+    totalEarnings >= 100000
+      ? `₹${(totalEarnings / 100000).toFixed(1)}L`
+      : `₹${totalEarnings.toLocaleString("en-IN")}`;
+
+  // Recent bookings (last 5)
+  const recentBookings = allBookings.slice(0, 5);
+
+  // Fleet status counts
+  const activeBookingScooterIds = new Set(
+    allBookings
+      .filter((b) => b.status === "active")
+      .map((b) => b.scooter_id)
+  );
+  const onRideCount = activeBookingScooterIds.size;
+  const availableCount = fleet.filter(
+    (s) => s.available > 0 && !activeBookingScooterIds.has(s.id)
+  ).length;
+  const maintenanceCount = fleet.filter(
+    (s) => s.available === 0 && !activeBookingScooterIds.has(s.id)
+  ).length;
+  const fleetHealth =
+    fleet.length > 0
+      ? Math.round(((fleet.length - maintenanceCount) / fleet.length) * 100)
+      : 100;
+
+  const stats = [
+    { label: "Total bookings", value: totalBookings.toLocaleString(), delta: "", icon: "event_note" },
+    { label: "Earnings (YTD)", value: formattedEarnings, delta: "", icon: "payments" },
+    { label: "Active scootys", value: String(activeScooters), delta: "", icon: "two_wheeler" },
+    {
+      label: "Avg rating",
+      value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "N/A",
+      delta: "",
+      icon: "star",
+    },
+  ];
+
+  const displayName = profile.full_name?.split(" ")[0] || "Vendor";
+
+  // Map booking status to display status
+  function displayStatus(status: string): string {
+    switch (status) {
+      case "confirmed":
+        return "Upcoming";
+      case "active":
+        return "Ongoing";
+      case "completed":
+        return "Completed";
+      case "cancelled":
+        return "Cancelled";
+      default:
+        return status;
+    }
+  }
+
   return (
     <VendorLayout
       active="Dashboard"
-      title="Hi Karan 👋"
+      title={`Hi ${displayName} 👋`}
       action={
         <div className="flex gap-3">
           <button className="rounded-full bg-surface-container-high px-5 py-2.5 font-bold text-sm">
@@ -46,9 +148,11 @@ export default function VendorDashboard() {
           >
             <div className="flex items-center justify-between">
               <Icon name={s.icon} className="text-primary" />
-              <span className="text-xs font-bold text-tertiary bg-tertiary-container/20 rounded-full px-2 py-0.5">
-                {s.delta}
-              </span>
+              {s.delta && (
+                <span className="text-xs font-bold text-tertiary bg-tertiary-container/20 rounded-full px-2 py-0.5">
+                  {s.delta}
+                </span>
+              )}
             </div>
             <div>
               <div className="text-3xl font-extrabold">{s.value}</div>
@@ -87,17 +191,17 @@ export default function VendorDashboard() {
         <div className="bg-surface-container-lowest rounded-lg p-6">
           <h3 className="text-xl font-extrabold mb-4">Fleet status</h3>
           <div className="space-y-3">
-            <FleetRow label="On ride" count={12} color="bg-tertiary" />
-            <FleetRow label="Available" count={4} color="bg-primary-container" />
-            <FleetRow label="Maintenance" count={2} color="bg-error" />
+            <FleetRow label="On ride" count={onRideCount} color="bg-tertiary" />
+            <FleetRow label="Available" count={availableCount} color="bg-primary-container" />
+            <FleetRow label="Maintenance" count={maintenanceCount} color="bg-error" />
           </div>
           <div className="mt-6 pt-6 border-t border-outline-variant/20">
             <div className="text-xs font-bold uppercase tracking-widest text-secondary">
               Fleet health
             </div>
-            <div className="text-3xl font-extrabold mt-1">92%</div>
+            <div className="text-3xl font-extrabold mt-1">{fleetHealth}%</div>
             <div className="h-2 bg-surface-container-high rounded-full mt-3 overflow-hidden">
-              <div className="h-full cta-gradient" style={{ width: "92%" }} />
+              <div className="h-full cta-gradient" style={{ width: `${fleetHealth}%` }} />
             </div>
           </div>
         </div>
@@ -114,59 +218,110 @@ export default function VendorDashboard() {
             View all →
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-xs font-bold uppercase tracking-widest text-secondary text-left">
-                <th className="py-3">Booking ID</th>
-                <th className="py-3">Scooty</th>
-                <th className="py-3">Customer</th>
-                <th className="py-3">Date</th>
-                <th className="py-3">Status</th>
-                <th className="py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map((r) => (
-                <tr key={r.id} className="border-t border-outline-variant/20">
-                  <td className="py-4 font-bold">{r.id}</td>
-                  <td className="py-4">{r.scooter}</td>
-                  <td className="py-4">{r.customer}</td>
-                  <td className="py-4 text-secondary">{r.date}</td>
-                  <td className="py-4">
-                    <StatusPill status={r.status} />
-                  </td>
-                  <td className="py-4 text-right">
-                    <button className="text-sm font-bold text-primary">
-                      View
-                    </button>
-                  </td>
+        {recentBookings.length === 0 ? (
+          <div className="text-center py-12 text-secondary">
+            <Icon name="event_note" className="!text-[48px] text-secondary/50" />
+            <p className="mt-3 font-bold">No bookings yet</p>
+            <p className="text-sm mt-1">
+              Bookings will appear here once riders start renting your scootys.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-xs font-bold uppercase tracking-widest text-secondary text-left">
+                  <th className="py-3">Booking ID</th>
+                  <th className="py-3">Scooty</th>
+                  <th className="py-3">Customer</th>
+                  <th className="py-3">Date</th>
+                  <th className="py-3">Status</th>
+                  <th className="py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {recentBookings.map((b) => (
+                  <tr key={b.id} className="border-t border-outline-variant/20">
+                    <td className="py-4 font-bold">{b.id.slice(0, 8).toUpperCase()}</td>
+                    <td className="py-4">{b.scooter?.name || "—"}</td>
+                    <td className="py-4">{b.rider_name || "—"}</td>
+                    <td className="py-4 text-secondary">
+                      {new Date(b.pickup_datetime).toLocaleDateString("en-IN", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </td>
+                    <td className="py-4">
+                      <StatusPill status={displayStatus(b.status)} />
+                    </td>
+                    <td className="py-4 text-right">
+                      <button className="text-sm font-bold text-primary">
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Fleet preview */}
       <div className="mt-8">
         <h3 className="text-xl font-extrabold mb-4">Your fleet</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {scooters.slice(0, 4).map((s) => (
-            <div
-              key={s.id}
-              className="bg-surface-container-lowest rounded-lg overflow-hidden"
+        {fleet.length === 0 ? (
+          <div className="bg-surface-container-lowest rounded-lg p-12 text-center">
+            <Icon name="two_wheeler" className="!text-[48px] text-secondary/50" />
+            <h4 className="text-xl font-extrabold mt-4">
+              Add your first scooty
+            </h4>
+            <p className="text-sm text-secondary mt-2 max-w-md mx-auto">
+              List your scooty and start earning. First booking usually lands
+              within 48 hours.
+            </p>
+            <Link
+              href="/vendor/add"
+              className="inline-block mt-6 cta-gradient text-on-primary-fixed rounded-full px-8 py-3 font-bold hover:opacity-95 active:scale-95 transition"
             >
-              <div className="relative aspect-[4/3] bg-surface-container-high">
-                <Image src={s.image} alt={s.name} fill sizes="25vw" className="object-cover" />
+              + Add scooty
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {fleet.slice(0, 4).map((s) => (
+              <div
+                key={s.id}
+                className="bg-surface-container-lowest rounded-lg overflow-hidden"
+              >
+                <div className="relative aspect-[4/3] bg-surface-container-high">
+                  {s.image ? (
+                    <Image
+                      src={s.image}
+                      alt={s.name}
+                      fill
+                      sizes="25vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <Icon
+                        name="two_wheeler"
+                        className="!text-[48px] text-secondary/30"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="font-bold">{s.name}</div>
+                  <div className="text-xs text-secondary mt-1">
+                    ₹{s.price_per_day}/day · {s.available} avail
+                  </div>
+                </div>
               </div>
-              <div className="p-4">
-                <div className="font-bold">{s.name}</div>
-                <div className="text-xs text-secondary mt-1">₹{s.pricePerDay}/day · {s.available} avail</div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </VendorLayout>
   );

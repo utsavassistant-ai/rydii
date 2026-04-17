@@ -1,10 +1,13 @@
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
 import { LocationPicker } from "@/components/LocationPicker";
-import { getScooterBySlug } from "@/lib/scooters";
+import { createClient } from "@/utils/supabase/server";
+import { requireAuth } from "@/lib/auth";
+import type { DbScooter } from "@/lib/types";
 
 export default async function CheckoutPage({
   params,
@@ -12,18 +15,125 @@ export default async function CheckoutPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const s = getScooterBySlug(slug);
+  const user = await requireAuth();
+
+  const supabase = createClient(await cookies());
+  const { data: s } = await supabase
+    .from("scooters")
+    .select("*")
+    .eq("slug", slug)
+    .single<DbScooter>();
+
   if (!s) notFound();
 
-  async function completeBooking() {
+  async function completeBooking(formData: FormData) {
     "use server";
-    redirect(`/booking/success?scooty=${slug}`);
+    const currentUser = await requireAuth();
+
+    const cookieStore = await cookies();
+    const sb = createClient(cookieStore);
+
+    // Re-read scooter to get current pricing
+    const { data: scooter } = await sb
+      .from("scooters")
+      .select("*")
+      .eq("slug", slug)
+      .single<DbScooter>();
+
+    if (!scooter) throw new Error("Scooter not found");
+
+    // Extract form fields
+    const rider_name = formData.get("rider_name") as string;
+    const rider_phone = formData.get("rider_phone") as string;
+    const rider_email = formData.get("rider_email") as string;
+    const rider_licence = formData.get("rider_licence") as string;
+    const pickup_datetime = formData.get("pickup_datetime") as string;
+    const drop_datetime = formData.get("drop_datetime") as string;
+    const pickup_mode = (formData.get("pickup_mode") as string) || "hub";
+    const pickup_hub = formData.get("pickup_hub") as string | null;
+    const pickup_address = formData.get("pickup_address") as string | null;
+    const pickup_lat = formData.get("pickup_lat")
+      ? Number(formData.get("pickup_lat"))
+      : null;
+    const pickup_lng = formData.get("pickup_lng")
+      ? Number(formData.get("pickup_lng"))
+      : null;
+    const drop_mode = (formData.get("drop_mode") as string) || "hub";
+    const drop_hub = formData.get("drop_hub") as string | null;
+    const drop_address = formData.get("drop_address") as string | null;
+    const drop_lat = formData.get("drop_lat")
+      ? Number(formData.get("drop_lat"))
+      : null;
+    const drop_lng = formData.get("drop_lng")
+      ? Number(formData.get("drop_lng"))
+      : null;
+    const payment_method = (formData.get("payment") as string) || "upi";
+    const promo_code = (formData.get("promo_code") as string) || null;
+
+    // Calculate days
+    const pickupDate = new Date(pickup_datetime);
+    const dropDate = new Date(drop_datetime);
+    const diffMs = dropDate.getTime() - pickupDate.getTime();
+    const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+    // Calculate pricing
+    const base_price = scooter.price_per_day * days;
+    const delivery_fee =
+      (pickup_mode === "delivery" ? 79 : 0) +
+      (drop_mode === "delivery" ? 79 : 0);
+    const platform_fee = 40;
+    const insurance_fee = 39;
+    const gst = Math.round(
+      (base_price + platform_fee + insurance_fee + delivery_fee) * 0.18
+    );
+    const total = base_price + delivery_fee + platform_fee + insurance_fee + gst;
+
+    const { data: booking, error } = await sb
+      .from("bookings")
+      .insert({
+        user_id: currentUser.id,
+        scooter_id: scooter.id,
+        pickup_datetime,
+        drop_datetime,
+        pickup_mode,
+        pickup_hub: pickup_mode === "hub" ? pickup_hub : null,
+        pickup_address: pickup_mode === "delivery" ? pickup_address : null,
+        pickup_lat: pickup_mode === "delivery" ? pickup_lat : null,
+        pickup_lng: pickup_mode === "delivery" ? pickup_lng : null,
+        drop_mode,
+        drop_hub: drop_mode === "hub" ? drop_hub : null,
+        drop_address: drop_mode === "delivery" ? drop_address : null,
+        drop_lat: drop_mode === "delivery" ? drop_lat : null,
+        drop_lng: drop_mode === "delivery" ? drop_lng : null,
+        days,
+        base_price,
+        delivery_fee,
+        platform_fee,
+        insurance_fee,
+        gst,
+        total,
+        payment_method,
+        status: "confirmed",
+        rider_name,
+        rider_phone,
+        rider_email,
+        rider_licence,
+        promo_code,
+      })
+      .select("id")
+      .single();
+
+    if (error || !booking) {
+      throw new Error(error?.message || "Failed to create booking");
+    }
+
+    redirect(`/booking/success?id=${booking.id}`);
   }
 
   const platform = 40;
   const insurance = 39;
-  const gst = Math.round((s.pricePerDay + platform + insurance) * 0.18);
-  const total = s.pricePerDay + platform + insurance + gst;
+  const gst = Math.round((s.price_per_day + platform + insurance) * 0.18);
+  const total = s.price_per_day + platform + insurance + gst;
 
   return (
     <>
@@ -38,13 +148,15 @@ export default async function CheckoutPage({
             {/* Vehicle teaser */}
             <section className="bg-surface-container-low rounded-lg p-6 flex items-center gap-6">
               <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-surface-container-high shrink-0">
-                <Image
-                  src={s.image}
-                  alt={s.name}
-                  fill
-                  sizes="128px"
-                  className="object-cover"
-                />
+                {s.image && (
+                  <Image
+                    src={s.image}
+                    alt={s.name}
+                    fill
+                    sizes="128px"
+                    className="object-cover"
+                  />
+                )}
               </div>
               <div className="flex-1">
                 <div className="text-xs font-bold uppercase tracking-widest text-primary">
@@ -54,7 +166,7 @@ export default async function CheckoutPage({
                   {s.name}
                 </h2>
                 <div className="text-sm text-secondary mt-1">
-                  {s.range || s.mileage} · {s.topSpeed}
+                  {s.range_km || s.mileage} · {s.top_speed}
                 </div>
               </div>
             </section>
@@ -97,6 +209,7 @@ export default async function CheckoutPage({
                 <Field label="Full name">
                   <input
                     type="text"
+                    name="rider_name"
                     required
                     placeholder="As on driving licence"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
@@ -105,6 +218,7 @@ export default async function CheckoutPage({
                 <Field label="Phone">
                   <input
                     type="tel"
+                    name="rider_phone"
                     required
                     placeholder="+91 98xxxx xxxx"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
@@ -113,6 +227,7 @@ export default async function CheckoutPage({
                 <Field label="Email">
                   <input
                     type="email"
+                    name="rider_email"
                     required
                     placeholder="you@example.com"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
@@ -121,6 +236,7 @@ export default async function CheckoutPage({
                 <Field label="Driving licence">
                   <input
                     type="text"
+                    name="rider_licence"
                     required
                     placeholder="KA01 20250001234"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
@@ -137,12 +253,14 @@ export default async function CheckoutPage({
                   icon="qr_code_2"
                   label="UPI"
                   sublabel="PhonePe, GPay, Paytm"
+                  value="upi"
                   defaultChecked
                 />
                 <PaymentOption
                   icon="credit_card"
                   label="Credit / Debit card"
                   sublabel="Visa, Mastercard, Rupay"
+                  value="card"
                 />
               </div>
             </section>
@@ -153,7 +271,7 @@ export default async function CheckoutPage({
             <div className="rounded-lg bg-surface-container-lowest shadow-ambient p-6 space-y-4">
               <h2 className="text-xl font-extrabold">Booking summary</h2>
               <div className="space-y-2 text-sm">
-                <Row label={`₹${s.pricePerDay} × 1 day`} value={`₹${s.pricePerDay}`} />
+                <Row label={`₹${s.price_per_day} × 1 day`} value={`₹${s.price_per_day}`} />
                 <Row label="Platform fee" value={`₹${platform}`} />
                 <Row label="Smart protection" value={`₹${insurance}`} />
                 <Row label="GST (18%)" value={`₹${gst}`} />
@@ -172,6 +290,7 @@ export default async function CheckoutPage({
 
               <div className="bg-surface-container-low rounded-lg p-3 flex items-center gap-2">
                 <input
+                  name="promo_code"
                   placeholder="Referral / promo code"
                   className="flex-1 bg-transparent focus:ring-0 border-none p-0 font-semibold placeholder:text-secondary/60"
                 />
@@ -224,11 +343,13 @@ function PaymentOption({
   icon,
   label,
   sublabel,
+  value,
   defaultChecked,
 }: {
   icon: string;
   label: string;
   sublabel: string;
+  value: string;
   defaultChecked?: boolean;
 }) {
   return (
@@ -236,6 +357,7 @@ function PaymentOption({
       <input
         type="radio"
         name="payment"
+        value={value}
         defaultChecked={defaultChecked}
         className="accent-primary-container"
       />

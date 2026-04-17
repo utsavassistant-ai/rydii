@@ -4,7 +4,8 @@ import { Footer } from "@/components/Footer";
 import { ScooterCard } from "@/components/ScooterCard";
 import { Icon } from "@/components/Icon";
 import { MobileFilterSheet } from "@/components/MobileFilterSheet";
-import { scooters, brands, cities } from "@/lib/scooters";
+import { cities } from "@/lib/scooters";
+import { getScooters, getBrands, toScooter } from "@/lib/db";
 
 type SearchParams = Promise<{
   city?: string;
@@ -23,11 +24,11 @@ export default async function BrowsePage({
   const selectedBrand = sp.brand;
   const sort = sp.sort || "popularity";
 
-  let list = [...scooters];
-  if (selectedCategory) list = list.filter((s) => s.category === selectedCategory);
-  if (selectedBrand) list = list.filter((s) => s.brand === selectedBrand);
-  if (sort === "price") list.sort((a, b) => a.pricePerDay - b.pricePerDay);
-  if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
+  const [dbList, brands] = await Promise.all([
+    getScooters({ city: sp.city, category: selectedCategory, brand: selectedBrand, sort }),
+    getBrands(),
+  ]);
+  const list = dbList.map(toScooter);
 
   return (
     <>

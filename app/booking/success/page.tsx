@@ -1,20 +1,48 @@
 import Link from "next/link";
 import Image from "next/image";
+import { cookies } from "next/headers";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
-import { getScooterBySlug, scooters } from "@/lib/scooters";
+import { createClient } from "@/utils/supabase/server";
+import type { Booking } from "@/lib/types";
 
-type Search = Promise<{ scooty?: string }>;
+type Search = Promise<{ id?: string }>;
+
+function formatDatetime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-IN", {
+    month: "short",
+    day: "numeric",
+  }) +
+    ", " +
+    d.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+}
 
 export default async function BookingSuccess({
   searchParams,
 }: {
   searchParams: Search;
 }) {
-  const { scooty } = await searchParams;
-  const s = getScooterBySlug(scooty || "") || scooters[0];
-  const bookingId = `RYD${Math.floor(Math.random() * 900000 + 100000)}`;
+  const { id } = await searchParams;
+
+  let booking: Booking | null = null;
+
+  if (id) {
+    const supabase = createClient(await cookies());
+    const { data } = await supabase
+      .from("bookings")
+      .select("*, scooter:scooters(*)")
+      .eq("id", id)
+      .single<Booking>();
+    booking = data;
+  }
+
+  const s = booking?.scooter;
 
   return (
     <>
@@ -30,34 +58,61 @@ export default async function BookingSuccess({
           Your scooty is reserved. We&apos;ve sent pickup details to your phone.
         </p>
 
-        <div className="mt-10 rounded-lg bg-surface-container-low p-6 md:p-8 text-left">
-          <div className="flex items-center gap-6">
-            <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-surface-container-high shrink-0">
-              <Image
-                src={s.image}
-                alt={s.name}
-                fill
-                sizes="128px"
-                className="object-cover"
+        {booking && s ? (
+          <div className="mt-10 rounded-lg bg-surface-container-low p-6 md:p-8 text-left">
+            <div className="flex items-center gap-6">
+              <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-surface-container-high shrink-0">
+                {s.image && (
+                  <Image
+                    src={s.image}
+                    alt={s.name}
+                    fill
+                    sizes="128px"
+                    className="object-cover"
+                  />
+                )}
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-primary">
+                  {booking.id.slice(0, 8).toUpperCase()}
+                </div>
+                <h2 className="text-2xl font-extrabold mt-1">{s.name}</h2>
+                <div className="text-sm text-secondary mt-1">
+                  {booking.pickup_hub || booking.pickup_address || s.hub},{" "}
+                  {s.city}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+              <Meta
+                icon="schedule"
+                label="Pickup"
+                value={formatDatetime(booking.pickup_datetime)}
               />
-            </div>
-            <div>
-              <div className="text-xs font-bold uppercase tracking-widest text-primary">
-                {bookingId}
-              </div>
-              <h2 className="text-2xl font-extrabold mt-1">{s.name}</h2>
-              <div className="text-sm text-secondary mt-1">
-                {s.hub}, {s.city}
-              </div>
+              <Meta
+                icon="event_available"
+                label="Return"
+                value={formatDatetime(booking.drop_datetime)}
+              />
+              <Meta
+                icon="location_on"
+                label="Hub"
+                value={booking.pickup_hub || booking.pickup_address || s.hub}
+              />
+              <Meta icon="payments" label="Paid" value={`₹${booking.total}`} />
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-            <Meta icon="schedule" label="Pickup" value="Oct 25, 10:00" />
-            <Meta icon="event_available" label="Return" value="Oct 26, 10:00" />
-            <Meta icon="location_on" label="Hub" value={s.hub} />
-            <Meta icon="payments" label="Paid" value={`₹${s.pricePerDay + 102}`} />
+        ) : (
+          <div className="mt-10 rounded-lg bg-surface-container-low p-6 md:p-8 text-left">
+            <p className="text-secondary">
+              Your booking has been placed successfully. Check{" "}
+              <Link href="/bookings" className="text-primary font-bold underline">
+                My bookings
+              </Link>{" "}
+              for details.
+            </p>
           </div>
-        </div>
+        )}
 
         <div className="mt-6 rounded-lg bg-inverse-surface text-inverse-on-surface p-6 text-left">
           <div className="flex items-start gap-3">

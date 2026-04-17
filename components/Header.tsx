@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "./Icon";
+import { AuthButton } from "./AuthButton";
 
 export function Header() {
   return (
@@ -26,20 +27,12 @@ export function Header() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            aria-label="Location"
-            className="hidden sm:flex p-2 text-secondary hover:opacity-80"
-          >
-            <Icon name="location_on" />
-          </button>
-          <button
             aria-label="Notifications"
             className="p-2 text-secondary hover:opacity-80"
           >
             <Icon name="notifications" />
           </button>
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high ring-2 ring-primary-container/40 flex items-center justify-center">
-            <Icon name="person" className="text-secondary" />
-          </div>
+          <AuthButton />
         </div>
       </div>
     </header>

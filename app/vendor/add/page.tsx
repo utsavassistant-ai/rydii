@@ -1,10 +1,101 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
+import { requireAuth } from "@/lib/auth";
 import { VendorLayout } from "@/components/VendorLayout";
 import { Icon } from "@/components/Icon";
 
 export default function AddScooterPage() {
-  async function submit() {
+  async function submit(formData: FormData) {
     "use server";
+
+    const user = await requireAuth();
+
+    const supabase = createClient(await cookies());
+
+    // Verify vendor role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || profile.role !== "vendor") {
+      redirect("/");
+    }
+
+    // Read form fields
+    const model = formData.get("model") as string;
+    const brand = formData.get("brand") as string;
+    const reg = formData.get("reg") as string;
+    const year = formData.get("year") as string;
+    const price = formData.get("price") as string;
+    const topSpeed = formData.get("topSpeed") as string;
+    const fuel = formData.get("fuel") as string; // "Petrol" or "Electric"
+
+    // Collect checked amenities
+    const amenityOptions = [
+      "Helmet",
+      "GPS tracking",
+      "Phone mount",
+      "USB charger",
+      "Raincoat",
+      "Fuel at start",
+    ];
+    const amenities = amenityOptions.filter(
+      (a) => formData.get(`amenity_${a}`) === "on"
+    );
+
+    // Validate registration number (basic format check)
+    if (!reg || reg.trim().length < 4) {
+      redirect("/vendor/add?error=invalid_reg");
+    }
+
+    // Validate required fields
+    if (!model || !brand || !price || !topSpeed) {
+      redirect("/vendor/add?error=missing_fields");
+    }
+
+    // Generate slug from model name
+    const slug = model
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+
+    // Determine fuel-type-specific fields
+    const isElectric = fuel === "Electric";
+    const category = isElectric ? "Electric" : "Petrol";
+    const engine = isElectric ? null : `${year} ${brand} Engine`;
+    const mileage = isElectric ? null : "45 km/l";
+    const range_km = isElectric ? "100 km" : null;
+
+    const { error } = await supabase.from("scooters").insert({
+      slug,
+      name: model.trim(),
+      brand: brand.trim(),
+      category,
+      price_per_day: parseInt(price, 10),
+      rating: 0,
+      reviews_count: 0,
+      engine,
+      mileage,
+      range_km,
+      top_speed: `${topSpeed} km/h`,
+      city: "Bangalore",
+      hub: "HSR Layout",
+      image: null,
+      gallery: [],
+      amenities,
+      description: null,
+      available: 1,
+      vendor_id: user.id,
+    });
+
+    if (error) {
+      redirect("/vendor/add?error=insert_failed");
+    }
+
     redirect("/vendor?added=1");
   }
 
@@ -74,6 +165,7 @@ export default function AddScooterPage() {
                 <input
                   name="price"
                   type="number"
+                  required
                   defaultValue="499"
                   className="w-full bg-transparent font-bold focus:ring-0 border-none p-0"
                 />
@@ -82,6 +174,7 @@ export default function AddScooterPage() {
                 <input
                   name="topSpeed"
                   type="number"
+                  required
                   defaultValue="85"
                   className="w-full bg-transparent font-bold focus:ring-0 border-none p-0"
                 />
@@ -116,6 +209,7 @@ export default function AddScooterPage() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="From">
                 <input
+                  name="availFrom"
                   type="date"
                   defaultValue="2025-10-03"
                   className="w-full bg-transparent font-bold focus:ring-0 border-none p-0"
@@ -123,6 +217,7 @@ export default function AddScooterPage() {
               </Field>
               <Field label="To">
                 <input
+                  name="availTo"
                   type="date"
                   defaultValue="2025-12-31"
                   className="w-full bg-transparent font-bold focus:ring-0 border-none p-0"
@@ -197,6 +292,7 @@ function FuelOption({
       <input
         type="radio"
         name="fuel"
+        value={label}
         defaultChecked={defaultChecked}
         className="accent-primary-container"
       />
@@ -217,6 +313,7 @@ function Amenity({
     <label className="flex items-center gap-3 bg-surface-container-low rounded-lg p-4 cursor-pointer">
       <input
         type="checkbox"
+        name={`amenity_${label}`}
         defaultChecked={defaultChecked}
         className="accent-primary-container"
       />

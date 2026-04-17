@@ -5,10 +5,11 @@ import { Footer } from "@/components/Footer";
 import { ScooterCard } from "@/components/ScooterCard";
 import { Icon } from "@/components/Icon";
 import { CitySelect } from "@/components/CitySelect";
-import { scooters } from "@/lib/scooters";
+import { getScooters, toScooter } from "@/lib/db";
 
-export default function HomePage() {
-  const featured = scooters.slice(0, 4);
+export default async function HomePage() {
+  const dbFeatured = await getScooters({ sort: "rating" });
+  const featured = dbFeatured.slice(0, 4).map(toScooter);
   return (
     <>
       <Header />

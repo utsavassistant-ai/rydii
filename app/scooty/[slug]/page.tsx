@@ -5,10 +5,11 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ScooterCard } from "@/components/ScooterCard";
 import { Icon } from "@/components/Icon";
-import { scooters, getScooterBySlug } from "@/lib/scooters";
+import { getScooterBySlug as getDbScooter, getScooters, toScooter, getAllSlugs } from "@/lib/db";
 
-export function generateStaticParams() {
-  return scooters.map((s) => ({ slug: s.slug }));
+export async function generateStaticParams() {
+  const slugs = await getAllSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export default async function ScootyDetail({
@@ -17,10 +18,12 @@ export default async function ScootyDetail({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const s = getScooterBySlug(slug);
-  if (!s) notFound();
+  const dbScooter = await getDbScooter(slug);
+  if (!dbScooter) notFound();
+  const s = toScooter(dbScooter);
 
-  const related = scooters.filter((x) => x.id !== s.id).slice(0, 3);
+  const allDb = await getScooters();
+  const related = allDb.filter((x) => x.slug !== s.slug).slice(0, 3).map(toScooter);
   const platform = 40;
   const insurance = 39;
   const total = s.pricePerDay + platform + insurance;
