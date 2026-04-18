@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
-import { createAdminClient } from "@/utils/supabase/admin";
+import { createClient } from "@/utils/supabase/server";
 
 export default async function SignupPage({
   searchParams,
@@ -18,29 +19,16 @@ export default async function SignupPage({
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const role = (formData.get("role") as string) || "rider";
+    const supabase = createClient(await cookies());
 
-    // Use admin client so user creation doesn't fail due to trigger issues.
-    // email_confirm: true auto-confirms since we don't gate on email verification.
-    const admin = createAdminClient();
-    const { data, error } = await admin.auth.admin.createUser({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName, role },
+      options: { data: { full_name: fullName, role } },
     });
-
     if (error) {
       redirect(`/auth/signup?error=${encodeURIComponent(error.message)}`);
     }
-
-    // Explicitly upsert profile — resilient even if trigger is missing/broken.
-    if (data?.user) {
-      await admin.from("profiles").upsert(
-        { id: data.user.id, full_name: fullName, role },
-        { onConflict: "id" }
-      );
-    }
-
     redirect("/auth/login?message=Account+created.+Please+log+in.");
   }
 
