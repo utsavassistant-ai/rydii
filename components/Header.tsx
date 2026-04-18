@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Icon } from "./Icon";
 import { AuthButton } from "./AuthButton";
+import { MobileNav } from "./MobileNav";
 
 export function Header() {
   return (
-    <header className="w-full top-0 sticky z-50 bg-surface/80 backdrop-blur-xl">
+    <header className="w-full top-0 sticky z-50 bg-surface/80 backdrop-blur-xl relative">
       <div className="flex justify-between items-center px-6 py-4 w-full max-w-screen-xl mx-auto">
         <div className="flex items-center gap-10">
           <Link
@@ -28,11 +29,12 @@ export function Header() {
         <div className="flex items-center gap-3">
           <button
             aria-label="Notifications"
-            className="p-2 text-secondary hover:opacity-80"
+            className="hidden md:block p-2 text-secondary hover:opacity-80"
           >
             <Icon name="notifications" />
           </button>
           <AuthButton />
+          <MobileNav />
         </div>
       </div>
     </header>

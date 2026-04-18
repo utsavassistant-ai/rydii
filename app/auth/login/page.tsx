@@ -9,7 +9,7 @@ import { createClient } from "@/utils/supabase/server";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; next?: string }>;
 }) {
   const sp = await searchParams;
 
@@ -38,6 +38,12 @@ export default async function LoginPage({
           Log in to manage your bookings and rentals.
         </p>
 
+        {sp.message && (
+          <div className="bg-primary-container text-on-primary-fixed rounded-lg p-4 mb-6 text-sm font-semibold flex items-center gap-2">
+            <Icon name="check_circle" className="!text-[18px]" />
+            {sp.message}
+          </div>
+        )}
         {sp.error && (
           <div className="bg-error-container text-on-error-container rounded-lg p-4 mb-6 text-sm font-semibold flex items-center gap-2">
             <Icon name="error" className="!text-[18px]" />
