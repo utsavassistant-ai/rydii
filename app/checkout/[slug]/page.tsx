@@ -184,7 +184,13 @@ export default async function CheckoutPage({
 
             {/* Rider details */}
             <section className="bg-surface-container-low rounded-lg p-6 space-y-4">
-              <h2 className="text-xl font-extrabold">Rider details</h2>
+              <div className="flex items-start justify-between flex-wrap gap-2">
+                <h2 className="text-xl font-extrabold">Rider details</h2>
+                <span className="flex items-center gap-1 text-xs font-semibold text-secondary bg-surface-container-lowest rounded-full px-3 py-1">
+                  <Icon name="badge" className="!text-[13px]" />
+                  Licence verified at hub
+                </span>
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <Field label="Full name">
                   <input
@@ -192,7 +198,7 @@ export default async function CheckoutPage({
                     name="rider_name"
                     required
                     defaultValue={profile?.full_name ?? ""}
-                    placeholder="As on driving licence"
+                    placeholder="Karan Sharma"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
                   />
                 </Field>
@@ -206,22 +212,13 @@ export default async function CheckoutPage({
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
                   />
                 </Field>
-                <Field label="Email">
+                <Field label="Email" className="md:col-span-2">
                   <input
                     type="email"
                     name="rider_email"
                     required
                     defaultValue={user?.email ?? ""}
                     placeholder="you@example.com"
-                    className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
-                  />
-                </Field>
-                <Field label="Driving licence">
-                  <input
-                    type="text"
-                    name="rider_licence"
-                    required
-                    placeholder="KA01 20250001234"
                     className="w-full bg-transparent font-bold focus:ring-0 border-none p-0 placeholder:text-secondary/60"
                   />
                 </Field>
@@ -329,9 +326,9 @@ export default async function CheckoutPage({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <label className="block bg-surface-container-lowest rounded-lg p-4">
+    <label className={`block bg-surface-container-lowest rounded-lg p-4${className ? ` ${className}` : ""}`}>
       <div className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-1">{label}</div>
       {children}
     </label>

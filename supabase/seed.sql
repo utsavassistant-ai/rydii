@@ -249,3 +249,109 @@ ON CONFLICT (slug) DO UPDATE SET
   description   = EXCLUDED.description,
   available     = EXCLUDED.available,
   vendor_id     = EXCLUDED.vendor_id;
+
+-- -------------------------------------------------------
+-- Delhi scooters (mirrors Bangalore fleet, different hubs)
+-- -------------------------------------------------------
+INSERT INTO public.scooters (
+  slug, name, brand, category,
+  price_per_day, rating, reviews_count,
+  engine, mileage, range_km, top_speed,
+  city, hub,
+  image, gallery, amenities, description,
+  available, vendor_id
+)
+VALUES
+
+-- Honda Activa 6G — Connaught Place
+(
+  'honda-activa-6g-delhi', 'Honda Activa 6G', 'Honda', 'Petrol',
+  499, 4.7, 96,
+  '110cc', '50 kmpl', NULL, '85 km/h',
+  'Delhi', 'Connaught Place Hub',
+  '/scooters/honda-activa-6g/hero.jpg',
+  ARRAY['/scooters/honda-activa-6g/hero.jpg', '/scooters/honda-activa-6g/card.jpg'],
+  ARRAY['Helmet', 'Phone Mount', 'Fuel Start'],
+  'India''s best-selling scooter. Smooth automatic transmission, silent start, and best-in-class mileage. Perfect for daily commutes through urban chaos.',
+  4, 'a0000000-0000-0000-0000-000000000001'
+),
+
+-- TVS Jupiter 125 — Karol Bagh
+(
+  'tvs-jupiter-125-delhi', 'TVS Jupiter 125', 'TVS', 'Petrol',
+  449, 4.5, 72,
+  '125cc', '55 kmpl', NULL, '90 km/h',
+  'Delhi', 'Karol Bagh Hub',
+  '/scooters/tvs-jupiter-125/hero.jpg',
+  ARRAY['/scooters/tvs-jupiter-125/hero.jpg', '/scooters/tvs-jupiter-125/card.jpg'],
+  ARRAY['Helmet', 'Large Boot', 'External Fuel Fill'],
+  'Bigger engine, bigger boot, bigger comfort. TVS Jupiter 125 handles long commutes and weekend runs with equal ease.',
+  3, 'a0000000-0000-0000-0000-000000000003'
+),
+
+-- Ather 450X — Saket
+(
+  'ather-450x-delhi', 'Ather 450X Gen 3', 'Ather', 'Electric',
+  699, 4.9, 178,
+  NULL, NULL, '146 km', '90 km/h',
+  'Delhi', 'Saket Hub',
+  'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80',
+  ARRAY[
+    'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=80'
+  ],
+  ARRAY['Free Charging', 'Smart Dashboard', 'Helmet'],
+  'India''s smartest electric scooter. 0-40 km/h in 3.3s, warp mode, and over-the-air updates. Save ₹200/day on fuel.',
+  2, 'a0000000-0000-0000-0000-000000000002'
+),
+
+-- Suzuki Access 125 — Lajpat Nagar
+(
+  'suzuki-access-125-delhi', 'Suzuki Access 125', 'Suzuki', 'Petrol',
+  549, 4.6, 48,
+  '125cc', '48 kmpl', NULL, '88 km/h',
+  'Delhi', 'Lajpat Nagar Hub',
+  '/scooters/suzuki-access-125/hero.jpg',
+  ARRAY['/scooters/suzuki-access-125/hero.jpg', '/scooters/suzuki-access-125/card.jpg'],
+  ARRAY['Helmet', 'USB Charging'],
+  'Premium ride quality with a powerful 125cc engine. Suzuki Access delivers smooth acceleration and stable cornering.',
+  5, 'a0000000-0000-0000-0000-000000000001'
+),
+
+-- Ola S1 Pro — Dwarka
+(
+  'ola-s1-pro-delhi', 'Ola S1 Pro Gen 2', 'Ola', 'Electric',
+  649, 4.4, 81,
+  NULL, NULL, '195 km', '120 km/h',
+  'Delhi', 'Dwarka Hub',
+  '/scooters/ola-s1-pro/hero.jpg',
+  ARRAY['/scooters/ola-s1-pro/hero.jpg', '/scooters/ola-s1-pro/card.jpg'],
+  ARRAY['Free Charging', 'Smart Dashboard', 'Helmet', 'Boot Space'],
+  'Top-of-the-line electric scooter. 195km range, 120km/h top speed, and premium ride quality.',
+  1, 'a0000000-0000-0000-0000-000000000002'
+),
+
+-- Bajaj Chetak — Nehru Place
+(
+  'bajaj-chetak-delhi', 'Bajaj Chetak Premium', 'Bajaj', 'Electric',
+  599, 4.3, 37,
+  NULL, NULL, '108 km', '73 km/h',
+  'Delhi', 'Nehru Place Hub',
+  'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1200&q=80',
+  ARRAY['https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&w=1200&q=80'],
+  ARRAY['Smart Dashboard', 'Helmet', 'Chrome Finish'],
+  'Retro meets modern. Metal body, classic silhouette, all-electric drivetrain.',
+  3, 'a0000000-0000-0000-0000-000000000003'
+)
+
+ON CONFLICT (slug) DO UPDATE SET
+  name          = EXCLUDED.name,
+  city          = EXCLUDED.city,
+  hub           = EXCLUDED.hub,
+  price_per_day = EXCLUDED.price_per_day,
+  rating        = EXCLUDED.rating,
+  reviews_count = EXCLUDED.reviews_count,
+  amenities     = EXCLUDED.amenities,
+  description   = EXCLUDED.description,
+  available     = EXCLUDED.available,
+  vendor_id     = EXCLUDED.vendor_id;
