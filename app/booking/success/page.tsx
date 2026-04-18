@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
 import { createClient } from "@/utils/supabase/server";
+import { getUser } from "@/lib/auth";
 import type { Booking } from "@/lib/types";
 
 type Search = Promise<{ id?: string }>;
@@ -29,15 +30,19 @@ export default async function BookingSuccess({
   searchParams: Search;
 }) {
   const { id } = await searchParams;
+  const user = await getUser();
 
   let booking: Booking | null = null;
 
-  if (id) {
+  // Require auth + ownership to show booking details.
+  // Avoids enumeration: unauthenticated visitors get the generic success screen.
+  if (id && user) {
     const supabase = createClient(await cookies());
     const { data } = await supabase
       .from("bookings")
       .select("*, scooter:scooters(*)")
       .eq("id", id)
+      .eq("user_id", user.id)
       .single<Booking>();
     booking = data;
   }

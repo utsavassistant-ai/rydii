@@ -19,6 +19,17 @@ export default async function VendorBookings() {
   const user = await requireAuth();
   const supabase = createClient(await cookies());
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || profile.role !== "vendor") {
+    const { redirect } = await import("next/navigation");
+    redirect("/");
+  }
+
   // Vendor's scooter IDs
   const { data: myScooters } = await supabase
     .from("scooters")
